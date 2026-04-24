@@ -82,6 +82,17 @@ covering anthropic, openai, and google. Edit it to match your available provider
     "haiku":  "anthropic/claude-haiku-4-5",
     "pro":    "google/gemini-3.1-pro-preview",
     "flash":  "google/gemini-2.5-flash"
+  },
+  "thinking": {
+    "anthropic/claude-opus-4-7":     "xhigh",
+    "anthropic/claude-sonnet-4-6":   "high",
+    "anthropic/claude-haiku-4-5":    "high",
+    "openai/gpt-5.4":                "xhigh",
+    "openai/gpt-5.4-mini":           "xhigh",
+    "openai/gpt-5.4-nano":           "xhigh",
+    "google/gemini-3.1-pro-preview": "high",
+    "google/gemini-2.5-flash":       "high",
+    "google/gemini-2.5-flash-lite":  "high"
   }
 }
 ```
@@ -94,6 +105,11 @@ covering anthropic, openai, and google. Edit it to match your available provider
 - Each provider entry maps `"1"`, `"2"`, `"3"` to model IDs (matching pi's model registry).
 - `nicknames` map a short name to `"provider/model-id"`. Used as `/tN:<nickname>`. Nicknames
   override the tier digit — `/t3:sonnet` uses the nickname's model, not tier 3 of its provider.
+- `thinking` maps `"provider/model-id"` to a reasoning level: `off`, `minimal`, `low`, `medium`,
+  `high`, or `xhigh`. Applied automatically each time pi-switch sets a model. pi clamps
+  unsupported levels (e.g. `xhigh` on a non-thinking model) so it's safe to overconfigure.
+  Models not in the map keep whatever level pi already has. Manual `shift+tab` overrides between
+  turns are preserved (they only get reset on the next pi-switch-driven model change).
 
 Edit the config directly on disk, then run `/default reset` or restart pi.
 

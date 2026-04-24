@@ -25,6 +25,18 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
 type Tier = 1 | 2 | 3;
 
+// Mirrors @mariozechner/pi-agent-core ThinkingLevel; redeclared to avoid
+// importing a transitive dep just for the union.
+type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
+const THINKING_LEVELS = new Set<ThinkingLevel>([
+  "off",
+  "minimal",
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+]);
+
 interface ProvidersConfig {
   [provider: string]: Partial<Record<"1" | "2" | "3", string>>;
 }
@@ -34,6 +46,7 @@ interface Config {
   defaultTier: Tier;
   providers: ProvidersConfig;
   nicknames: Record<string, string>; // nickname -> "provider/model-id"
+  thinking: Record<string, ThinkingLevel>; // "provider/model-id" -> level
 }
 
 const CONFIG_PATH = join(homedir(), ".pi", "agent", "pi-switch.json");
@@ -64,6 +77,17 @@ const SEED_CONFIG: Config = {
     haiku: "anthropic/claude-haiku-4-5",
     pro: "google/gemini-3.1-pro-preview",
     flash: "google/gemini-2.5-flash",
+  },
+  thinking: {
+    "anthropic/claude-opus-4-7": "xhigh",
+    "anthropic/claude-sonnet-4-6": "high",
+    "anthropic/claude-haiku-4-5": "high",
+    "openai/gpt-5.4": "xhigh",
+    "openai/gpt-5.4-mini": "xhigh",
+    "openai/gpt-5.4-nano": "xhigh",
+    "google/gemini-3.1-pro-preview": "high",
+    "google/gemini-2.5-flash": "high",
+    "google/gemini-2.5-flash-lite": "high",
   },
 };
 
@@ -155,6 +179,16 @@ export default function (pi: ExtensionAPI) {
       }
     }
 
+    result.thinking = {};
+    if (input.thinking && typeof input.thinking === "object") {
+      for (const [key, level] of Object.entries(input.thinking)) {
+        if (typeof level !== "string") continue;
+        if (!THINKING_LEVELS.has(level as ThinkingLevel)) continue;
+        if (!key.includes("/")) continue;
+        result.thinking[key] = level as ThinkingLevel;
+      }
+    }
+
     return result;
   }
 
@@ -220,6 +254,13 @@ export default function (pi: ExtensionAPI) {
       );
       return false;
     }
+    // Apply configured thinking level for this model. pi clamps to model
+    // capabilities, so unsupported levels degrade gracefully. Only fires when
+    // pi-switch is the cause of the model change — plain messages don't
+    // trigger applyModel, so manual shift+tab overrides between turns persist.
+    const key = `${resolved.provider}/${resolved.modelId}`;
+    const level = config.thinking[key];
+    if (level) pi.setThinkingLevel(level);
     return true;
   }
 
