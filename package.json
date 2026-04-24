@@ -1,0 +1,15 @@
+{
+  "name": "pi-switch",
+  "version": "0.1.0",
+  "description": "pi extension for deliberate model switching via slash-command shortcuts",
+  "type": "module",
+  "license": "MIT",
+  "repository": "github:arthurnw/pi-switch",
+  "author": "arthurnw",
+  "keywords": [
+    "pi",
+    "pi-coding-agent",
+    "llm",
+    "model-switching"
+  ]
+}

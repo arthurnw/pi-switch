@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "paths": {
+      "@mariozechner/pi-coding-agent": [
+        "/Users/anw/.local/share/mise/installs/node/25.9.0/lib/node_modules/@mariozechner/pi-coding-agent/dist/index.d.ts"
+      ],
+      "@mariozechner/pi-tui": [
+        "/Users/anw/.local/share/mise/installs/node/25.9.0/lib/node_modules/@mariozechner/pi-tui/dist/index.d.ts"
+      ],
+      "@mariozechner/pi-ai": [
+        "/Users/anw/.local/share/mise/installs/node/25.9.0/lib/node_modules/@mariozechner/pi-ai/dist/index.d.ts"
+      ]
+    }
+  },
+  "include": ["pi-switch.ts"]
+}
