@@ -19,19 +19,19 @@ instead of round-robin cycling.
 
 ## Commands
 
-| Command | Behavior | Writes to disk | Reverts after turn |
-|---------|----------|:---:|:---:|
-| `/t1 <message>` | Send `<message>` with default provider's tier 1 | ✗ | ✓ |
-| `/t2:anthropic <message>` | Explicit provider, this turn only | ✗ | ✓ |
-| `/t3:sonnet <message>` | Nickname (overrides tier digit), this turn only | ✗ | ✓ |
-| `/t1` (no body) | Alias for `/default tier 1` | ✓ | ✗ |
-| `/t1:openai` (no body) | Alias for setting default provider + default tier together | ✓ | ✗ |
-| `/t2:sonnet` (nickname, no body) | Set active model from nickname. Sticky for session. | ✗ | ✗ |
-| `/default show` | Print current defaults and active model | — | — |
-| `/default provider <name>` | Set default provider (validates current tier exists) | ✓ | ✗ |
-| `/default tier <1\|2\|3>` | Set default tier (validates current provider has it) | ✓ | ✗ |
-| `/default reset` | Reload config file from disk and re-apply defaults | — | — |
-| `/switch <provider>/<model-id>` | Direct `setModel`. Sticky for session, doesn't save. | ✗ | ✗ |
+| Command                          | Behavior                                                   | Writes to disk | Reverts after turn |
+| -------------------------------- | ---------------------------------------------------------- | :------------: | :----------------: |
+| `/t1 <message>`                  | Send `<message>` with default provider's tier 1            |       ✗        |         ✓          |
+| `/t2:anthropic <message>`        | Explicit provider, this turn only                          |       ✗        |         ✓          |
+| `/t3:sonnet <message>`           | Nickname (overrides tier digit), this turn only            |       ✗        |         ✓          |
+| `/t1` (no body)                  | Alias for `/default tier 1`                                |       ✓        |         ✗          |
+| `/t1:openai` (no body)           | Alias for setting default provider + default tier together |       ✓        |         ✗          |
+| `/t2:sonnet` (nickname, no body) | Set active model from nickname. Sticky for session.        |       ✗        |         ✗          |
+| `/default show`                  | Print current defaults and active model                    |       —        |         —          |
+| `/default provider <name>`       | Set default provider (validates current tier exists)       |       ✓        |         ✗          |
+| `/default tier <1\|2\|3>`        | Set default tier (validates current provider has it)       |       ✓        |         ✗          |
+| `/default reset`                 | Reload config file from disk and re-apply defaults         |       —        |         —          |
+| `/switch <provider>/<model-id>`  | Direct `setModel`. Sticky for session, doesn't save.       |       ✗        |         ✗          |
 
 **Three axes to think about:**
 
@@ -44,9 +44,27 @@ instead of round-robin cycling.
 ## Install
 
 ```sh
+pi install git:github.com/arthurnw/pi-switch
+```
+
+This clones the repo to `~/.pi/agent/git/github.com/arthurnw/pi-switch` and adds
+it to the `packages` array in `settings.json`. `pi update` pulls latest. To
+pin: append `@v0.1.0` (or any tag/commit). SSH form is also accepted:
+`pi install git:git@github.com:arthurnw/pi-switch`.
+
+### Dev install (editable)
+
+For iterating on pi-switch itself, clone wherever you keep source and symlink
+the extension file. pi auto-discovers single-file extensions in
+`~/.pi/agent/extensions/`:
+
+```sh
 git clone https://github.com/arthurnw/pi-switch.git ~/code/oss/pi-switch
 ln -s ~/code/oss/pi-switch/pi-switch.ts ~/.pi/agent/extensions/pi-switch.ts
 ```
+
+Don't combine the two install paths on the same machine — you'd register the
+extension twice.
 
 Start pi. On first run, `~/.pi/agent/pi-switch.json` is created with a seed config
 covering anthropic, openai, and google. Edit it to match your available providers/keys.
@@ -77,22 +95,22 @@ covering anthropic, openai, and google. Edit it to match your available provider
     }
   },
   "nicknames": {
-    "opus":   "anthropic/claude-opus-4-7",
+    "opus": "anthropic/claude-opus-4-7",
     "sonnet": "anthropic/claude-sonnet-4-6",
-    "haiku":  "anthropic/claude-haiku-4-5",
-    "pro":    "google/gemini-3.1-pro-preview",
-    "flash":  "google/gemini-2.5-flash"
+    "haiku": "anthropic/claude-haiku-4-5",
+    "pro": "google/gemini-3.1-pro-preview",
+    "flash": "google/gemini-2.5-flash"
   },
   "thinking": {
-    "anthropic/claude-opus-4-7":     "xhigh",
-    "anthropic/claude-sonnet-4-6":   "high",
-    "anthropic/claude-haiku-4-5":    "high",
-    "openai/gpt-5.4":                "xhigh",
-    "openai/gpt-5.4-mini":           "xhigh",
-    "openai/gpt-5.4-nano":           "xhigh",
+    "anthropic/claude-opus-4-7": "xhigh",
+    "anthropic/claude-sonnet-4-6": "high",
+    "anthropic/claude-haiku-4-5": "high",
+    "openai/gpt-5.4": "xhigh",
+    "openai/gpt-5.4-mini": "xhigh",
+    "openai/gpt-5.4-nano": "xhigh",
     "google/gemini-3.1-pro-preview": "high",
-    "google/gemini-2.5-flash":       "high",
-    "google/gemini-2.5-flash-lite":  "high"
+    "google/gemini-2.5-flash": "high",
+    "google/gemini-2.5-flash-lite": "high"
   }
 }
 ```

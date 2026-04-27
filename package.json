@@ -8,8 +8,17 @@
   "author": "arthurnw",
   "keywords": [
     "pi",
+    "pi-package",
     "pi-coding-agent",
     "llm",
     "model-switching"
-  ]
+  ],
+  "pi": {
+    "extensions": [
+      "pi-switch.ts"
+    ]
+  },
+  "peerDependencies": {
+    "@mariozechner/pi-coding-agent": "*"
+  }
 }
