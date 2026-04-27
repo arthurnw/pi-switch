@@ -268,13 +268,14 @@ export default function (pi: ExtensionAPI) {
   //
   // Single status key "pi-switch". Shows dim default normally; when the user is
   // typing a prefix the pending override replaces it (bright, to draw attention).
-  // ANSI codes pass through pi-status-bar's footer renderer unchanged.
+  // Status text contains only pi-switch's own data — separators between footer
+  // items are the footer renderer's concern, not ours.
 
   const DIM = "\x1b[2m";
   const DIM_RESET = "\x1b[22m";
 
   function defaultStatusText(): string {
-    return `${DIM}· default: ${config.defaultProvider}/t${config.defaultTier}${DIM_RESET}`;
+    return `${DIM}default: ${config.defaultProvider}/t${config.defaultTier}${DIM_RESET}`;
   }
 
   function setFooterStatus(ctx: any, text: string): void {
@@ -291,10 +292,7 @@ export default function (pi: ExtensionAPI) {
   function updatePendingStatus(ctx: any, pending: string | undefined): void {
     if (pending === lastPendingStatus) return;
     lastPendingStatus = pending;
-    setFooterStatus(
-      ctx,
-      pending !== undefined ? `· ${pending}` : defaultStatusText(),
-    );
+    setFooterStatus(ctx, pending !== undefined ? pending : defaultStatusText());
   }
 
   function formatPending(resolved: Resolved): string {
