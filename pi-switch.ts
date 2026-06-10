@@ -3,14 +3,14 @@
  *
  * Shortcuts:
  *   /t1 <message>              one-shot: use default provider's tier 1 for this turn, revert after
- *   /t2:anthropic <message>    one-shot with explicit provider
+ *   /t0:anthropic <message>    one-shot with explicit provider (tier 0 = top-of-line)
  *   /t3:sonnet <message>       one-shot with nickname (nickname overrides tier)
  *   /t1                        persistent: change default tier to 1
  *   /t1:openai                 persistent: change default provider and default tier together
  *
  * Real commands:
  *   /default provider <name>   set default provider
- *   /default tier <1|2|3>      set default tier
+ *   /default tier <0|1|2|3>    set default tier
  *   /default show              show current defaults + active model
  *   /default reset             reload config file
  *   /switch <provider/model>   direct setModel without sending a message
@@ -23,7 +23,9 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
-type Tier = 1 | 2 | 3;
+type Tier = 0 | 1 | 2 | 3;
+type TierKey = "0" | "1" | "2" | "3";
+const TIER_KEYS = ["0", "1", "2", "3"] as const;
 
 // Mirrors @mariozechner/pi-agent-core ThinkingLevel; redeclared to avoid
 // importing a transitive dep just for the union.
@@ -38,7 +40,7 @@ const THINKING_LEVELS = new Set<ThinkingLevel>([
 ]);
 
 interface ProvidersConfig {
-  [provider: string]: Partial<Record<"1" | "2" | "3", string>>;
+  [provider: string]: Partial<Record<TierKey, string>>;
 }
 
 interface Config {
@@ -53,45 +55,50 @@ const CONFIG_PATH = join(homedir(), ".pi", "agent", "pi-switch.json");
 
 const SEED_CONFIG: Config = {
   defaultProvider: "anthropic",
-  defaultTier: 2,
+  defaultTier: 1,
   providers: {
     anthropic: {
-      "1": "claude-opus-4-7",
+      "0": "claude-fable-5",
+      "1": "claude-opus-4-8",
       "2": "claude-sonnet-4-6",
       "3": "claude-haiku-4-5",
     },
     openai: {
-      "1": "gpt-5.4",
-      "2": "gpt-5.4-mini",
-      "3": "gpt-5.4-nano",
+      "0": "gpt-5.5-pro",
+      "1": "gpt-5.5",
+      "2": "gpt-5.4",
+      "3": "gpt-5.4-mini",
     },
     google: {
-      "1": "gemini-3.1-pro-preview",
-      "2": "gemini-2.5-flash",
-      "3": "gemini-2.5-flash-lite",
+      "0": "gemini-3.1-pro-preview",
+      "1": "gemini-3.5-flash",
+      "2": "gemini-3.1-flash-lite",
     },
   },
   nicknames: {
-    opus: "anthropic/claude-opus-4-7",
+    fable: "anthropic/claude-fable-5",
+    opus: "anthropic/claude-opus-4-8",
     sonnet: "anthropic/claude-sonnet-4-6",
     haiku: "anthropic/claude-haiku-4-5",
     pro: "google/gemini-3.1-pro-preview",
-    flash: "google/gemini-2.5-flash",
+    flash: "google/gemini-3.5-flash",
   },
   thinking: {
-    "anthropic/claude-opus-4-7": "xhigh",
+    "anthropic/claude-fable-5": "xhigh",
+    "anthropic/claude-opus-4-8": "xhigh",
     "anthropic/claude-sonnet-4-6": "high",
     "anthropic/claude-haiku-4-5": "high",
+    "openai/gpt-5.5-pro": "xhigh",
     "openai/gpt-5.4": "xhigh",
     "openai/gpt-5.4-mini": "xhigh",
     "openai/gpt-5.4-nano": "xhigh",
     "google/gemini-3.1-pro-preview": "high",
-    "google/gemini-2.5-flash": "high",
-    "google/gemini-2.5-flash-lite": "high",
+    "google/gemini-3.5-flash": "high",
+    "google/gemini-3.1-flash-lite": "high",
   },
 };
 
-const PREFIX_RE = /^\/t([1-3])(?::([a-zA-Z0-9_-]+))?(?:\s+([\s\S]*)|$)/;
+const PREFIX_RE = /^\/t([0-3])(?::([a-zA-Z0-9_-]+))?(?:\s+([\s\S]*)|$)/;
 
 export default function (pi: ExtensionAPI) {
   let config: Config = structuredClone(SEED_CONFIG);
@@ -134,8 +141,8 @@ export default function (pi: ExtensionAPI) {
       result.providers = {};
       for (const [name, tiers] of Object.entries(input.providers)) {
         if (!tiers || typeof tiers !== "object") continue;
-        const entry: Partial<Record<"1" | "2" | "3", string>> = {};
-        for (const tier of ["1", "2", "3"] as const) {
+        const entry: Partial<Record<TierKey, string>> = {};
+        for (const tier of TIER_KEYS) {
           const v = (tiers as Record<string, unknown>)[tier];
           if (typeof v === "string" && v.trim()) entry[tier] = v.trim();
         }
@@ -161,6 +168,7 @@ export default function (pi: ExtensionAPI) {
     }
 
     if (
+      input.defaultTier === 0 ||
       input.defaultTier === 1 ||
       input.defaultTier === 2 ||
       input.defaultTier === 3
@@ -224,7 +232,7 @@ export default function (pi: ExtensionAPI) {
       };
     }
 
-    const modelId = tiers[String(tier) as "1" | "2" | "3"];
+    const modelId = tiers[String(tier) as TierKey];
     if (!modelId) {
       return { error: `Provider "${provider}" has no tier ${tier} configured` };
     }
@@ -450,7 +458,7 @@ export default function (pi: ExtensionAPI) {
           .map((p) => ({ value: `provider ${p}`, label: p }));
       }
       if (head === "tier" && tail.length === 1) {
-        return ["1", "2", "3"]
+        return [...TIER_KEYS]
           .filter((n) => n.startsWith(tail[0] ?? ""))
           .map((n) => ({ value: `tier ${n}`, label: `tier ${n}` }));
       }
@@ -501,9 +509,7 @@ export default function (pi: ExtensionAPI) {
         }
         // Verify the current default-tier exists for the new provider before committing.
         if (
-          !config.providers[name]![
-            String(config.defaultTier) as "1" | "2" | "3"
-          ]
+          !config.providers[name]![String(config.defaultTier) as TierKey]
         ) {
           ctx.ui.notify(
             `Provider "${name}" has no tier ${config.defaultTier} configured. ` +
@@ -528,13 +534,11 @@ export default function (pi: ExtensionAPI) {
         return;
       }
 
-      const tierMatch = trimmed.match(/^tier\s+([1-3])$/);
+      const tierMatch = trimmed.match(/^tier\s+([0-3])$/);
       if (tierMatch) {
         const tier = Number(tierMatch[1]) as Tier;
         if (
-          !config.providers[config.defaultProvider]![
-            String(tier) as "1" | "2" | "3"
-          ]
+          !config.providers[config.defaultProvider]![String(tier) as TierKey]
         ) {
           ctx.ui.notify(
             `Provider "${config.defaultProvider}" has no tier ${tier} configured`,
@@ -559,7 +563,7 @@ export default function (pi: ExtensionAPI) {
       }
 
       ctx.ui.notify(
-        "Usage:\n  /default show\n  /default provider <name>\n  /default tier <1|2|3>\n  /default reset",
+        "Usage:\n  /default show\n  /default provider <name>\n  /default tier <0|1|2|3>\n  /default reset",
         "error",
       );
     },

@@ -1,8 +1,9 @@
 # pi-switch
 
 A [pi](https://github.com/badlogic/pi-mono) extension for deliberate model switching via slash-command
-shortcuts. Configure tiers (opus/sonnet/haiku or equivalent) across multiple providers, then
-target a specific (provider, tier) per message. Inspired by
+shortcuts. Configure tiers (fable/opus/sonnet/haiku or equivalent) across multiple providers, then
+target a specific (provider, tier) per message. Tier 0 is reserved for top-of-line models
+(e.g. Claude Fable, GPT-5.5 Pro), tier 1 for everyday flagships. Inspired by
 [kyleboas/pi-cycle](https://github.com/kyleboas/pi-cycle); diverged to support explicit selection
 instead of round-robin cycling.
 
@@ -21,6 +22,7 @@ instead of round-robin cycling.
 
 | Command                          | Behavior                                                   | Writes to disk | Reverts after turn |
 | -------------------------------- | ---------------------------------------------------------- | :------------: | :----------------: |
+| `/t0 <message>`                  | Send `<message>` with default provider's tier 0 (top)      |       ✗        |         ✓          |
 | `/t1 <message>`                  | Send `<message>` with default provider's tier 1            |       ✗        |         ✓          |
 | `/t2:anthropic <message>`        | Explicit provider, this turn only                          |       ✗        |         ✓          |
 | `/t3:sonnet <message>`           | Nickname (overrides tier digit), this turn only            |       ✗        |         ✓          |
@@ -29,7 +31,7 @@ instead of round-robin cycling.
 | `/t2:sonnet` (nickname, no body) | Set active model from nickname. Sticky for session.        |       ✗        |         ✗          |
 | `/default show`                  | Print current defaults and active model                    |       —        |         —          |
 | `/default provider <name>`       | Set default provider (validates current tier exists)       |       ✓        |         ✗          |
-| `/default tier <1\|2\|3>`        | Set default tier (validates current provider has it)       |       ✓        |         ✗          |
+| `/default tier <0\|1\|2\|3>`     | Set default tier (validates current provider has it)       |       ✓        |         ✗          |
 | `/default reset`                 | Reload config file from disk and re-apply defaults         |       —        |         —          |
 | `/switch <provider>/<model-id>`  | Direct `setModel`. Sticky for session, doesn't save.       |       ✗        |         ✗          |
 
@@ -76,41 +78,46 @@ covering anthropic, openai, and google. Edit it to match your available provider
 ```json
 {
   "defaultProvider": "anthropic",
-  "defaultTier": 2,
+  "defaultTier": 1,
   "providers": {
     "anthropic": {
-      "1": "claude-opus-4-7",
+      "0": "claude-fable-5",
+      "1": "claude-opus-4-8",
       "2": "claude-sonnet-4-6",
       "3": "claude-haiku-4-5"
     },
     "openai": {
-      "1": "gpt-5.4",
-      "2": "gpt-5.4-mini",
-      "3": "gpt-5.4-nano"
+      "0": "gpt-5.5-pro",
+      "1": "gpt-5.5",
+      "2": "gpt-5.4",
+      "3": "gpt-5.4-mini"
     },
     "google": {
-      "1": "gemini-3.1-pro-preview",
-      "2": "gemini-2.5-flash",
-      "3": "gemini-2.5-flash-lite"
+      "0": "gemini-3.1-pro-preview",
+      "1": "gemini-3.5-flash",
+      "2": "gemini-3.1-flash-lite"
     }
   },
   "nicknames": {
-    "opus": "anthropic/claude-opus-4-7",
+    "fable": "anthropic/claude-fable-5",
+    "opus": "anthropic/claude-opus-4-8",
     "sonnet": "anthropic/claude-sonnet-4-6",
     "haiku": "anthropic/claude-haiku-4-5",
     "pro": "google/gemini-3.1-pro-preview",
-    "flash": "google/gemini-2.5-flash"
+    "flash": "google/gemini-3.5-flash"
   },
   "thinking": {
-    "anthropic/claude-opus-4-7": "xhigh",
+    "anthropic/claude-fable-5": "xhigh",
+    "anthropic/claude-opus-4-8": "xhigh",
     "anthropic/claude-sonnet-4-6": "high",
     "anthropic/claude-haiku-4-5": "high",
+    "openai/gpt-5.5-pro": "xhigh",
     "openai/gpt-5.4": "xhigh",
     "openai/gpt-5.4-mini": "xhigh",
     "openai/gpt-5.4-nano": "xhigh",
     "google/gemini-3.1-pro-preview": "high",
-    "google/gemini-2.5-flash": "high",
-    "google/gemini-2.5-flash-lite": "high"
+    "google/gemini-3.5-flash": "high",
+    "google/gemini-3.1-flash-lite": "high"
   }
 }
 ```
@@ -119,8 +126,9 @@ covering anthropic, openai, and google. Edit it to match your available provider
 
 - `defaultProvider` must be a key in `providers`. If missing or invalid, falls back to the first
   provider defined.
-- `defaultTier` must be 1, 2, or 3. Defaults to 1 if missing or invalid.
-- Each provider entry maps `"1"`, `"2"`, `"3"` to model IDs (matching pi's model registry).
+- `defaultTier` must be 0, 1, 2, or 3. Defaults to 1 if missing or invalid.
+- Each provider entry maps `"0"`, `"1"`, `"2"`, `"3"` to model IDs (matching pi's model
+  registry). Tier 0 is optional and reserved for top-of-line models above the everyday flagship.
 - `nicknames` map a short name to `"provider/model-id"`. Used as `/tN:<nickname>`. Nicknames
   override the tier digit — `/t3:sonnet` uses the nickname's model, not tier 3 of its provider.
 - `thinking` maps `"provider/model-id"` to a reasoning level: `off`, `minimal`, `low`, `medium`,

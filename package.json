@@ -1,6 +1,6 @@
 {
   "name": "pi-switch",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "pi extension for deliberate model switching via slash-command shortcuts",
   "type": "module",
   "license": "MIT",
