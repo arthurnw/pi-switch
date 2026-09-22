@@ -11,7 +11,7 @@ instead of round-robin cycling.
 
 - **Explicit model targeting**: `/t1 explain this` uses the default provider's tier 1 for one turn.
 - **Provider overrides**: `/t2:openai explain this` uses OpenAI's tier 2 for one turn.
-- **Nickname shortcuts**: `/t1:sonnet explain this` resolves via global nicknames.
+- **Nickname shortcuts**: `/t1:sonnet explain this` and `/switch sonnet` resolve via global nicknames.
 - **One-shot by default, sticky defaults**: Per-message targeting reverts to defaults after the
   turn. Change defaults explicitly with `/default`.
 - **Live footer preview**: The pending model is shown in the status bar as you type, before you
@@ -34,6 +34,7 @@ instead of round-robin cycling.
 | `/default tier <0\|1\|2\|3>`     | Set default tier (validates current provider has it)       |       ✓        |         ✗          |
 | `/default reset`                 | Reload config file from disk and re-apply defaults         |       —        |         —          |
 | `/switch <provider>/<model-id>`  | Direct `setModel`. Sticky for session, doesn't save.       |       ✗        |         ✗          |
+| `/switch <nickname>`             | Same, resolved through `nicknames`                         |       ✗        |         ✗          |
 
 **Three axes to think about:**
 

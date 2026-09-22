@@ -14,6 +14,7 @@
  *   /default show              show current defaults + active model
  *   /default reset             reload config file
  *   /switch <provider/model>   direct setModel without sending a message
+ *   /switch <nickname>         same, resolved through nicknames
  *
  * Config: ~/.pi/agent/pi-switch.json
  */
@@ -204,21 +205,28 @@ export default function (pi: ExtensionAPI) {
 
   type Resolved = { provider: string; modelId: string };
 
+  function resolveNickname(
+    nickname: string,
+  ): Resolved | { error: string } | undefined {
+    const target = config.nicknames[nickname];
+    if (!target) return undefined;
+    const [provider, ...rest] = target.split("/");
+    const modelId = rest.join("/");
+    if (!provider || !modelId) {
+      return {
+        error: `Nickname "${nickname}" has invalid target "${target}" (expected "provider/model-id")`,
+      };
+    }
+    return { provider, modelId };
+  }
+
   function resolveSpec(
     tier: Tier,
     suffix: string | undefined,
   ): Resolved | { error: string } {
     // Nickname wins over provider when suffix is ambiguous.
-    if (suffix && config.nicknames[suffix]) {
-      const [provider, ...rest] = config.nicknames[suffix]!.split("/");
-      const modelId = rest.join("/");
-      if (!provider || !modelId) {
-        return {
-          error: `Nickname "${suffix}" has invalid target "${config.nicknames[suffix]}" (expected "provider/model-id")`,
-        };
-      }
-      return { provider, modelId };
-    }
+    const nick = suffix ? resolveNickname(suffix) : undefined;
+    if (nick) return nick;
 
     const provider = suffix ?? config.defaultProvider;
     const tiers = config.providers[provider];
@@ -571,19 +579,40 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerCommand("switch", {
     description:
-      "Directly switch active model without sending a message. Arg: provider/model-id",
+      "Directly switch active model without sending a message. Arg: provider/model-id or nickname",
+    getArgumentCompletions: (prefix) =>
+      Object.entries(config.nicknames)
+        .filter(([nick]) => nick.startsWith(prefix.trim()))
+        .map(([nick, target]) => ({ value: nick, label: `${nick} → ${target}` })),
     handler: async (args, ctx) => {
+      const usage = "Usage: /switch <provider>/<model-id> | <nickname>";
       const spec = args.trim();
-      if (!spec.includes("/")) {
-        ctx.ui.notify("Usage: /switch <provider>/<model-id>", "error");
-        return;
+      let resolved: Resolved;
+      if (spec.includes("/")) {
+        const [provider, ...rest] = spec.split("/");
+        const modelId = rest.join("/");
+        if (!provider || !modelId) {
+          ctx.ui.notify(usage, "error");
+          return;
+        }
+        resolved = { provider, modelId };
+      } else {
+        const nick = spec ? resolveNickname(spec) : undefined;
+        if (!nick) {
+          const known = Object.keys(config.nicknames).join(", ") || "(none)";
+          ctx.ui.notify(
+            spec ? `Unknown nickname: "${spec}". Known: ${known}` : usage,
+            "error",
+          );
+          return;
+        }
+        if ("error" in nick) {
+          ctx.ui.notify(nick.error, "error");
+          return;
+        }
+        resolved = nick;
       }
-      const [provider, ...rest] = spec.split("/");
-      const modelId = rest.join("/");
-      if (!provider || !modelId) {
-        ctx.ui.notify("Usage: /switch <provider>/<model-id>", "error");
-        return;
-      }
+      const { provider, modelId } = resolved;
       const ok = await applyModel(ctx, { provider, modelId });
       // `/switch` is intentionally non-reverting: we leave hasActiveOverride false
       // so agent_end won't fight the user's explicit choice.
