@@ -346,6 +346,8 @@ export default function (pi: ExtensionAPI) {
   // ─── Session lifecycle ────────────────────────────────────────────────────
 
   pi.on("session_start", async (_event, ctx) => {
+    if (ctx.mode !== "tui") return;
+
     await loadConfig();
     updateDefaultStatus(ctx);
 
@@ -371,11 +373,15 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.on("turn_start", (_event, ctx) => {
+    if (ctx.mode !== "tui") return;
+
     // Clear stale pending preview at turn boundaries (input is cleared on submit).
     updatePendingStatus(ctx, undefined);
   });
 
   pi.on("agent_end", async (_event, ctx) => {
+    if (ctx.mode !== "tui") return;
+
     if (!hasActiveOverride) return;
     hasActiveOverride = false;
     const resolved = resolveDefault();
@@ -389,6 +395,8 @@ export default function (pi: ExtensionAPI) {
   // ─── Input handler ────────────────────────────────────────────────────────
 
   pi.on("input", async (event, ctx) => {
+    if (ctx.mode !== "tui") return;
+
     const match = event.text.match(PREFIX_RE);
     if (!match) return;
 
@@ -473,6 +481,8 @@ export default function (pi: ExtensionAPI) {
       return [];
     },
     handler: async (args, ctx) => {
+      if (ctx.mode !== "tui") return;
+
       const trimmed = args.trim();
 
       if (trimmed === "" || trimmed === "show") {
@@ -585,6 +595,8 @@ export default function (pi: ExtensionAPI) {
         .filter(([nick]) => nick.startsWith(prefix.trim()))
         .map(([nick, target]) => ({ value: nick, label: `${nick} → ${target}` })),
     handler: async (args, ctx) => {
+      if (ctx.mode !== "tui") return;
+
       const usage = "Usage: /switch <provider>/<model-id> | <nickname>";
       const spec = args.trim();
       let resolved: Resolved;
